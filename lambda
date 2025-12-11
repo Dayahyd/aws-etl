@@ -1,0 +1,42 @@
+import boto3
+import csv
+import io
+import uuid
+import pyarrow as pa
+import pyarrow.parquet as pq
+import pandas as pd
+
+
+s3 = boto3.client('s3')
+
+
+def lambda_handler(event, context):
+# Extract S3 location
+bucket = event['bucket']
+key = event['key']
+
+
+obj = s3.get_object(Bucket=bucket, Key=key)
+body = obj['Body'].read()
+
+
+# Assume CSV for example
+df = pd.read_csv(io.BytesIO(body))
+
+
+# Basic validation
+if 'id' not in df.columns:
+raise Exception('Missing id column')
+
+
+# Convert to parquet in memory
+table = pa.Table.from_pandas(df)
+out_buffer = pa.BufferOutputStream()
+pq.write_table(table, out_buffer)
+
+
+target_key = key.replace('raw/', 'staging/').rsplit('.',1)[0] + '.parquet'
+s3.put_object(Bucket='etl-staging-bucket', Key=target_key, Body=out_buffer.getvalue().to_pybytes())
+
+
+return {'status': 'success', 'path': target_key}
