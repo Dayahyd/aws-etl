@@ -1,0 +1,35 @@
+{
+"Comment": "Serverless ETL workflow",
+"StartAt": "Validate",
+"States": {
+"Validate": {
+"Type": "Task",
+"Resource": "arn:aws:lambda:REGION:ACCOUNT:function:validate_transform",
+"Retry": [{"ErrorEquals": ["States.TaskFailed"], "IntervalSeconds": 10, "MaxAttempts": 2}],
+"Catch": [{"ErrorEquals": ["States.ALL"], "Next": "NotifyFailure"}],
+"Next": "IsLargeFile"
+},
+"IsLargeFile": {
+"Type": "Choice",
+"Choices": [{"Variable": "$.is_large", "NumericEquals": 1, "Next": "GlueTransform"}],
+"Default": "CatalogAndFinish"
+},
+"GlueTransform": {
+"Type": "Task",
+"Resource": "arn:aws:states:::glue:startJobRun.sync",
+"Parameters": {"JobName": "glue-etl-job", "Arguments": {"--s3_input": "$.s3_input"}},
+"Next": "CatalogAndFinish",
+"Catch": [{"ErrorEquals": ["States.ALL"], "Next": "NotifyFailure"}]
+},
+"CatalogAndFinish": {
+"Type": "Task",
+"Resource": "arn:aws:lambda:REGION:ACCOUNT:function:catalog_register",
+"End": true
+},
+"NotifyFailure": {
+"Type": "Task",
+"Resource": "arn:aws:lambda:REGION:ACCOUNT:function:notify_failure",
+"End": true
+}
+}
+}
