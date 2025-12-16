@@ -3,6 +3,7 @@ from pyspark.sql.functions import from_json, col, current_timestamp
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType
 
 
+
 # Spark session with Kafka support
 spark = (SparkSession.builder
 .appName("kafka-streaming-app")
