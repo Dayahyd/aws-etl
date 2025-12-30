@@ -1,3 +1,4 @@
+
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import from_json, col, current_timestamp
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType
